@@ -80,7 +80,7 @@ sigmaK = sqrt(grid(:,2)) .* repmat([1 0 0], size(grid,1),1) .* sigma_A_norm;
 model.muC    =  muK - 0.5 * dot(sigmaK', sigmaK')';  %%%consumption process
 model.sigmaC =  sigmaK; 
 model.sigmaS =  -Pi;  %%stochastic discount factor
-model.muS    =  -r - 0.5 * (vecnorm( model.sigmaS')').^2;
+model.muS    =  -r - 0.5 * dot(model.sigmaS', model.sigmaS')';
 
 %%%muX, sigmaX
 model.muX        = [ (lambda_g * (g_bar - grid(:,1)))  (lambda_s * (s_bar - grid(:,2)))];
@@ -128,9 +128,9 @@ figure('pos',[10 10 900 900])
 subplot(2,3,1)
 plot( linspace(1,40,model.T),[expoElas{1}.firstType(:,1) expoElas{2}.firstType(:,1) expoElas{3}.firstType(:,1)] * sqrt(12) , ...
     'LineWidth', 2);
-legend( {strcat('g =', " ", num2str( round(x0(1,1),3) )), ...
+legend( cellstr({strcat('g =', " ", num2str( round(x0(1,1),3) )), ...
     strcat('g =', " ", num2str( round(x0(2,1),3) )), ...
-    strcat('g =', " ", num2str( round(x0(3,1),3) ))}, 'FontSize',8 );
+    strcat('g =', " ", num2str( round(x0(3,1),3) ))} ), 'FontSize',8 );
 title("First Shock");
 
 subplot(2,3,2)
@@ -147,9 +147,9 @@ title("Third Shock");
 subplot(2,3,4)
 plot(linspace(1,40,model.T), [expoElas{4}.firstType(:,1) expoElas{5}.firstType(:,1) expoElas{6}.firstType(:,1)] * sqrt(12), ...
     'LineWidth', 2);
-legend( {strcat('s =', " ", num2str( round(x0(1,2),3) )), ...
+legend( cellstr({strcat('s =', " ", num2str( round(x0(1,2),3) )), ...
     strcat('s =', " ", num2str( round(x0(2,2),3) )), ...
-    strcat('s =', " ", num2str( round(x0(3,2),3) ))}, 'FontSize',8 );
+    strcat('s =', " ", num2str( round(x0(3,2),3) ))}), 'FontSize',8 );
 title("First Shock");
 
 subplot(2,3,5)
@@ -171,9 +171,9 @@ figure('pos',[10 10 900 900])
 subplot(2,3,1)
 plot( linspace(1,40,model.T),[priceElas{1}.firstType(:,1) priceElas{2}.firstType(:,1) priceElas{3}.firstType(:,1)] * sqrt(12) , ...
     'LineWidth', 2);
-legend( {strcat('g =', " ", num2str( round(x0(1,1),3) )), ...
+legend( cellstr({strcat('g =', " ", num2str( round(x0(1,1),3) )), ...
     strcat('g =', " ", num2str( round(x0(2,1),3) )), ...
-    strcat('g =', " ", num2str( round(x0(3,1),3) ))}, 'FontSize',8 );
+    strcat('g =', " ", num2str( round(x0(3,1),3) ))}), 'FontSize',8 );
 title("First Shock");
 
 subplot(2,3,2)
