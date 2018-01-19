@@ -1,1 +1,1 @@
-*.cpp linguist-vendored
+*.cpp linguist-language=Matlab
