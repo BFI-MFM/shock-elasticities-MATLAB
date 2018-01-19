@@ -5,7 +5,7 @@ The Shock Elasticities Toolbox is a set of user-friendly functions that allow yo
 ## Installation and Usage
 The toolbox has a very detailed [documentation](/main.pdf) and examples. Please use it as a guide.
 
-As a quick start, complete sections 2.1 and 2.2 in the README file. Afterwards, simply run
+As a quick start, complete sections 2.1 and 2.2 in the documentation. Afterwards, simply run
 
 ```matlab
 HeKrushnamurthy
