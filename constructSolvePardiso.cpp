@@ -10,7 +10,6 @@
 #include <fstream>
 #include <algorithm>
 #include <random>
-#include "parameters.h"
 
 //include Eigen
 #include "eigen3/Eigen/Dense"
