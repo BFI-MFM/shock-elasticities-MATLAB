@@ -2,13 +2,13 @@
 %%%%%%Function to compute shock elasticities%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [varargout] = computeElas(domain,model,bc,x0,optArgs) 
+function [varargout] = computeElas(domain,modelInput,bc,x0,optArgs) 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%Inputs%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % domain - grid for state variables
-% model - struct that has muC, sigmaC, muX, sigmaX, T, dt
+% modelInput - struct that has muC, sigmaC, muX, sigmaX, T, dt
 % bc - struct that has a0, level, first, and second
 % x0 - starting points
 % optArgs - struct that has optional arguments
@@ -16,6 +16,21 @@ function [varargout] = computeElas(domain,model,bc,x0,optArgs)
 
 
 %% Step 0 Preliminaries
+
+%%%Convert function handles to numerical values
+model.muX = modelInput.muX(domain);
+model.muC = modelInput.muC(domain);
+model.muS = modelInput.muS(domain);
+
+model.sigmaX = cell(1, size(model.muX,2));
+for i = 1:size(model.sigmaX,2)
+    %%
+    model.sigmaX{i} = modelInput.sigmaX{i}(domain);
+end
+model.sigmaC = modelInput.sigmaC(domain);
+model.sigmaS = modelInput.sigmaS(domain);
+
+model.T = modelInput.T; model.dt = modelInput.dt;
 
 %%%Check inputs
 checkInputs(domain,model,bc,x0);

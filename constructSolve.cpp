@@ -242,7 +242,7 @@ linearSysVars::linearSysVars(stateVars & state_vars, Eigen::MatrixXd muC, Eigen:
 
 
 void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd firstCoefs, Eigen::MatrixXd secondCoefs, std::vector<Eigen::MatrixXd> sigmaXCoef, stateVars & state_vars, const bc & bc, double dt, bool changed) {
-    matList.clear();
+    matList.clear(); Eigen::ArrayXd atBoundsInd; atBoundsInd.resize(state_vars.N);
     //construct matrix
     for (int i = 0; i < state_vars.S; ++i) {
 
@@ -257,13 +257,13 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
         
         for (int n = (state_vars.N - 1); n >=0; --n ) {
             
-            
+            atBoundsInd(n) = -1;
             //check if it is at boundary
-            if (state_vars.stateMat(i,n) == state_vars.upperLims(n) || state_vars.stateMat(i,n) == state_vars.lowerLims(n) ) {
+            if ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0 || std::abs(state_vars.stateMat(i,n) - state_vars.lowerLims(n)) < state_vars.dVec(n) / 2.0 ) {
                 atBound = true;
                 //check if it's at one of the corners
                 for (int n_sub = n-1; n_sub >=0; --n_sub) {
-                    if (state_vars.stateMat(i,n_sub) == state_vars.upperLims(n_sub) || state_vars.stateMat(i,n_sub) == state_vars.lowerLims(n_sub) ) {
+                    if ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.upperLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 || std::abs(state_vars.stateMat(i,n_sub) - state_vars.lowerLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 ) {
                         if (! (bc.natural) ) {
                             //if not using natural bdries, set as specified 
                             totalChange = totalChange + 1.0/state_vars.dVec(n_sub);
@@ -276,7 +276,8 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
             }
             
             //check whether it's at upper or lower boundary
-            if (state_vars.stateMat(i,n) == state_vars.upperLims(n)  ) {  //upper boundary
+            if ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0  ) {  //upper boundary
+                atBoundsInd(n) = 1;
                 if ( (!bc.natural) && (!corner) ) {
                     //if not using natural bdries, set as specified
                     matList.push_back(Trip(i, i, bc.level(n) + bc.first(n)/state_vars.dVec(n) + bc.second(n) / pow(state_vars.dVec(n), 2) ));
@@ -284,11 +285,12 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
                     matList.push_back(Trip(i, i - 2*state_vars.increVec(n), bc.second(n) / pow(state_vars.dVec(n), 2) ));
                 } else if ( bc.natural ) {
                     //using natural bdries
-                    matList.push_back(Trip(i, i, levelCoefs(i) + firstCoefs(i)/state_vars.dVec(n) + secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
+                    matList.push_back(Trip(i, i, firstCoefs(i)/state_vars.dVec(n) + secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
                     matList.push_back(Trip(i, i - state_vars.increVec(n), -firstCoefs(i)/state_vars.dVec(n) - 2 * secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
                     matList.push_back(Trip(i, i - 2*state_vars.increVec(n), secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
                 }
-            } else if (state_vars.stateMat(i,n) == state_vars.lowerLims(n)  ) { //lower boundary
+            } else if ( std::abs(state_vars.stateMat(i,n) - state_vars.lowerLims(n)) < state_vars.dVec(n) / 2.0 ) { //lower boundary
+                atBoundsInd(n) = 1;
                 if ( (!bc.natural) && (!corner) ) {
                     //if not using natural bdries, set as specified
                     matList.push_back(Trip(i, i, bc.level(n) - bc.first(n)/state_vars.dVec(n) + bc.second(n) / pow(state_vars.dVec(n), 2) ));
@@ -297,7 +299,7 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
                 
                 } else if ( bc.natural ) {   
 
-                    matList.push_back(Trip(i, i, levelCoefs(i) - firstCoefs(i)/state_vars.dVec(n) + secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
+                    matList.push_back(Trip(i, i, - firstCoefs(i)/state_vars.dVec(n) + secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
                     matList.push_back(Trip(i, i + state_vars.increVec(n), firstCoefs(i)/state_vars.dVec(n) - 2 * secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
                     matList.push_back(Trip(i, i + 2*state_vars.increVec(n), secondCoefs(i) / pow(state_vars.dVec(n), 2) ));
                 }
@@ -323,16 +325,14 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
             atBounds.push_back(i);
         }
         
-        if (!atBound) {
-            //level and time deriv
-            
+        if ( ( !atBound && !bc.natural ) ) {
             matList.push_back(Trip(i,i,levelCoefs(i) ));
-            
-            //add elements to the vector of triplets for matrix construction
-            for (int n = (state_vars.N - 1); n >= 0; --n) {
-                
-                //handle level and the first and second deriv terms for each dim
-                
+        } else if ( bc.natural ) {
+            matList.push_back(Trip(i,i,levelCoefs(i) ));
+        }
+        
+        for (int n = (state_vars.N - 1); n >=0; --n ) {
+            if ( ( !atBound && !bc.natural ) || (bc.natural && (atBoundsInd(n) < 0 ) ) ) {
                 //first derivative
                 double firstCoef = firstCoefs(i,n);
                 
@@ -356,13 +356,28 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
                     
                     double crossCoef = (sigmaXCoef[n].row(i).array() * sigmaXCoef[n_sub].row(i).array()).sum();
                     if (crossCoef != 0.0) {
-                        matList.push_back(Trip(i, i + state_vars.increVec(n) + state_vars.increVec(n_sub), crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
-                        matList.push_back(Trip(i, i - state_vars.increVec(n) - state_vars.increVec(n_sub), crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
-                        matList.push_back(Trip(i, i + state_vars.increVec(n) - state_vars.increVec(n_sub), -crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
-                        matList.push_back(Trip(i, i - state_vars.increVec(n) + state_vars.increVec(n_sub), -crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
+                        matList.push_back(Trip(i, i + state_vars.increVec(n) * (1 + (-1) *   ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n) - state_vars.lowerLims(n)) < state_vars.dVec(n) / 2.0 ) ) 
+                        + state_vars.increVec(n_sub) * (1 + (-1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.upperLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.lowerLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 ) ), crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
+                        matList.push_back(Trip(i, i - state_vars.increVec(n) * (1 + (-1) *   ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n) - state_vars.lowerLims(n)) < state_vars.dVec(n) / 2.0 ) ) 
+                        - state_vars.increVec(n_sub) * (1 + (-1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.upperLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.lowerLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 )), crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
+                        matList.push_back(Trip(i, i + state_vars.increVec(n) * (1 + (-1) *   ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n) - state_vars.lowerLims(n)) < state_vars.dVec(n) / 2.0 ) ) 
+                        - state_vars.increVec(n_sub) * (1 + (-1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.upperLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.lowerLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 )), -crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
+                        matList.push_back(Trip(i, i - state_vars.increVec(n) * (1 + (-1) *   ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0 ) + (1) *  (state_vars.stateMat(i,n) - state_vars.lowerLims(n) < state_vars.dVec(n) / 2.0 ) ) 
+                        + state_vars.increVec(n_sub) * (1 + (-1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.upperLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 ) + (1) *  ( std::abs(state_vars.stateMat(i,n_sub) - state_vars.lowerLims(n_sub)) < state_vars.dVec(n_sub) / 2.0 )), -crossCoef / (4 * state_vars.dVec(n) * state_vars.dVec(n_sub)) ));
                     }
                     
                 }
+            }
+            
+        }
+        
+        if (!atBound) {
+
+            //add elements to the vector of triplets for matrix construction
+            for (int n = (state_vars.N - 1); n >= 0; --n) {
+                
+                //handle level and the first and second deriv terms for each dim
+                
                 
             }
             
@@ -370,6 +385,7 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
         
         
     }
+    
     
     //construct matrix
     L.setFromTriplets(matList.begin(), matList.end());
