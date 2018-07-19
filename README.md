@@ -13,3 +13,6 @@ HeKrushnamurthy
 
 in MATLAB. It will compute shock elasticities for a one-dimensional model based on He and Krushnamurthy (2013).
 
+## Live Script
+
+In a [live MATLAB script](http://larspeterhansen.org/wp-content/uploads/2018/03/DVD_Example.html), we use the toolbox to compute shock elasticities for Bansal and Yaron (2004) in a [research reflection](http://larspeterhansen.org/news/article/dynamic-value-decompositions/), which showcases the use of the toolbox and the intuitive interpretation of shock elasticities.
