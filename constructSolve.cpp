@@ -314,7 +314,19 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
         //if the index is at one of the corners:
         if (corner) {
             if (! (bc.natural)) {
-                matList.push_back(Trip(i,i, 1.0/totalBound * totalChange));
+                matList.push_back(Trip(i,i, -1.0 ));
+                
+                for (int n = (state_vars.N - 1); n >=0; --n ) {
+                    
+                    //check whether it's at upper or lower boundary
+                    if ( std::abs(state_vars.stateMat(i,n) - state_vars.upperLims(n)) < state_vars.dVec(n) / 2.0  ) {  //upper boundary
+                        matList.push_back(Trip(i, i - state_vars.increVec(n), 1.0 / state_vars.N ) );
+                        
+                    } else if ( std::abs(state_vars.stateMat(i,n) - state_vars.lowerLims(n)) < state_vars.dVec(n) / 2.0 ) { //lower boundary
+                        matList.push_back(Trip(i, i + state_vars.increVec(n), 1.0 / state_vars.N ) );
+                    }
+                    
+                }
             }
             corners.push_back(i);
         }
@@ -371,19 +383,7 @@ void linearSysVars::constructMat(Eigen::VectorXd levelCoefs, Eigen::MatrixXd fir
             
         }
         
-        if (!atBound) {
 
-            //add elements to the vector of triplets for matrix construction
-            for (int n = (state_vars.N - 1); n >= 0; --n) {
-                
-                //handle level and the first and second deriv terms for each dim
-                
-                
-            }
-            
-        }
-        
-        
     }
     
     
@@ -419,23 +419,10 @@ void linearSysVars::solveT(int T, const bc & bc, stateVars & state_vars, Eigen::
             phiAll.col(t) = solver.solve(phiAll.col(t));
             
             //adjust corners
-        
+                
             for (int i = 0; i < corners.size(); ++i) {
-                double count = 0.0;
-                double num = 0.0;
             
-                //compute the average for corners
-                for (int n = 0; n < state_vars.N; ++n ) {
-                    if (state_vars.stateMat(corners[i],n) == state_vars.upperLims(n)) {
-                        count = count + 1.0;
-                        num = num + phiAll(corners[i] - state_vars.increVec(n), t);
-                    } else if (state_vars.stateMat(corners[i],n) == state_vars.lowerLims(n)) {
-                        count = count + 1.0;
-                        num = num + phiAll(corners[i] + state_vars.increVec(n), t);
-                    }
-                }
-            
-                phiAll(corners[i],t) = num / count;
+                phiAll(corners[i],t) = 0.0;
 
             }
         }
